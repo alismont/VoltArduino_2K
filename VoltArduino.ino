@@ -26,7 +26,7 @@ DS1302RTC RTC(36, 34, 32);
 
 // INIT VARIABLES BLUETOOTH
 // PIN Number
-#define PINNUMBER "5559"//"1576"  //"2913"
+#define PINNUMBER "5559"//"5559"//"1576"  //"2913"
 // initialize the library instance
 GSM gsmAccess = false; // include a 'true' parameter for debug enabled
 GSM_SMS sms;
@@ -124,7 +124,7 @@ int IndexDebug = 0; // POUR LE TEST
 int IndexDebugN = 0; // POUR LE TEST
 int IndexDebugF = 0; // POUR LE TEST
 int IndexDebugB = 0; // POUR LE TEST
-
+int SetHeure,SetMin,SetJour,SetMois,SetAnnee;
 int IndexDebugProc = 0; // POUR LE TEST
 int IndexDebugNProc = 0; // POUR LE TEST
 int IndexDebugFProc = 0; // POUR LE TEST
@@ -355,6 +355,17 @@ bool T52TT;
 //  Serial.println(F("I don't know that command. Try another. "));
 //}
 
+//-----------------------------------------------------------
+// Clock
+void ClockGestion(){
+// Activate RTC module
+
+
+  setTime(SetHeure, SetMin, 0,  SetJour ,SetMois , SetAnnee); //set the system time to
+
+  RTC.set(now());  
+  
+}
 
 //-----------------------------------------------------------
 // Start GSM shield
@@ -399,7 +410,7 @@ void GsmAutorisation() {
       }
 
       if (AutorisationSMS) {
-        if (!B3[304] && SMSNbrCycle <= 0) {
+        if (!B3[304] && SMSNbrCycle <= 0 && !B3[122]) {
           Message = SMS_Receive();
           SMSNbrCycle = 10;
           // Traitement SMS 1
@@ -490,14 +501,7 @@ void setup() {
   //  lcd.setCurs||(0, 2);
   //  lcd.print("HELLO");
 
-  // Activate RTC module
-  pinMode(DS1302_GND_PIN, OUTPUT);
-  digitalWrite(DS1302_GND_PIN, LOW);
-
-
-  pinMode(DS1302_VCC_PIN, OUTPUT);
-  digitalWrite(DS1302_VCC_PIN, HIGH);
-
+  
 
   //delay(5000);
 
@@ -561,7 +565,13 @@ void setup() {
   // pinMode(buttonPin51, INPUT);
   pinMode(buttonPin52, INPUT);
   //pinMode(buttonPin53, INPUT);
+  
+  pinMode(DS1302_GND_PIN, OUTPUT);
+  digitalWrite(DS1302_GND_PIN, LOW);
 
+
+  pinMode(DS1302_VCC_PIN, OUTPUT);
+  digitalWrite(DS1302_VCC_PIN, HIGH);
   F10[65] = -0.03;
   F10[66] = -0.03;
   F10[67] = -0.04;
@@ -690,13 +700,13 @@ void setup() {
   //  }
   //  while (SYNCHRO == 0);
   //********************************************************************************
-  //Horloge
-  //set time
-  setTime(18, 05, 0, 7, 7, 2016); //set the system time to
-  //  23h31m30s on 3Feb2009
-  RTC.set(now());                     //set the RTC from the system time
-  //********************************************************************************
-
+  SetHeure=01;
+  SetMin=00;
+  SetJour=01;
+  SetMois=01;
+  SetAnnee=2016;
+  
+  ClockGestion();
 
   //Serial.println("fin setup");
 
@@ -831,16 +841,17 @@ void loop() {
   //-------------------------------------------------------------------------------------------------------------------------prg automate
   // PRG AUTOMATE
 
-  F8[100] = F8[110];
+  //F8[100] = F8[110];
   F8[101] =  F8[159] + F8[169] + F8[179] + F8[189] + F8[199] + F8[209];
 
-  if (F8[101] > -0.1) {
-    if (F8[101] < 0.1) {
-      if (F8[100] > F8[102]) {
-        F8[100] =  F8[102];
-      }
-    }
-  }
+  //if (F8[101] > -0.1) {
+  //  if (F8[101] < 0.1) {
+  //    if (F8[100] > F8[102]) {
+  //      F8[100] =  F8[102];
+  //    }
+  //  }
+  //}
+  
   F8[151] =  F8[159] * F8[45];
   F8[161] =  F8[169] * F8[45];
   F8[171] =  F8[179] * F8[45];
@@ -1064,7 +1075,7 @@ void loop() {
   //10   -------------------------------calcul puissances-------------------------------------------MW
 
   F8[220] =  F8[100] * F8[60];
-
+    
   TonT10();
   if (ST10 == 2) {
     F8[111] = F8[111] + F8[220];
@@ -2156,7 +2167,7 @@ void loop() {
   }
 
 
-  if ( buttonPin33Num < 4 && TDN[0]) {
+  if ( buttonPin33Num < 4 && TDN[0] && (buttonPin41Num < 4 || buttonPin45Num < 4)) {
     B3[14] = 1 ; //cond secu charge batterie fuse et bms ok
   }
   else {
@@ -2170,7 +2181,7 @@ void loop() {
     B3[15] = 0 ;
   }
 
-  if (buttonPin35Num < 4 || B3[90] || B3[123]) {
+  if (buttonPin35Num < 4 || B3[90] || B3[123] || (buttonPin45Num >=4 && buttonPin43Num<4)) {
     B3[13] = 1 ;// fin charge batterie
   }
   else {
@@ -4292,14 +4303,18 @@ N7[69]=N7[21];
     B3[388] =  0.0; //-------------B3:24/3
   }
 
-
+ if (N7[10] == 320.0 && N7[11] == N7[10] && buttonPin45Num >= 4 ) {
+    N7[10] =  330.0;
+  }
+  
+  
   if (N7[10] == 320.0 && N7[11] == N7[10] && buttonPin45Num < 4 ) {
     N7[10] =  340.0;
   }
 
   if (N7[10] ==  330.0 && N7[11] == N7[10]) {
     B3[389] =  1.0;
-    if (N7[11] == N7[10] && TDN[70] && buttonPin41Num >= 4 ) {
+    if (N7[11] == N7[10] && TDN[70] && buttonPin43Num >= 4 ) {
       N7[10] =  340.0;
     }
     if (TDN[72]) {
@@ -4723,6 +4738,10 @@ N7[69]=N7[21];
     B3[385] =  0.0; //-------------B3:24/0
   }
 
+    if (N7[11] == N7[10] && N7[10] == 580.0 && buttonPin45Num >= 4) {
+    N7[10] =  590.0;
+  }
+  
   if (N7[11] == N7[10] && N7[10] == 580.0 && buttonPin45Num < 4) {
     N7[10] =  595.0;
   }
@@ -6079,9 +6098,13 @@ N7[69]=N7[21];
   TDN[85] =  1.0;
   T[85] = 50;
   }
-  GsmAutorisation(); //gsm blocage
-  FirstScan = 0;
-  
+  // Serial.println(buttonPin40Num);
+  if(buttonPin40Num>=4)
+  {
+    GsmAutorisation(); //gsm blocage
+    }
+    FirstScan = 0;
+ 
   //FIN SEQUENCE
   //-----------------------------------------------
   MessTraitement();
@@ -6628,26 +6651,24 @@ void Ecriture() {
 
       //SET TIME
       if (chaineReception.substring(0, 3) == "SET")  {
-      Serial.println("SET");
+    //  Serial.println("SET");
         String InString;
         InString = chaineReception.substring(3,5);        
-        int SetHeure = InString.toInt();
-        Serial.println(SetHeure);       
+        SetHeure = InString.toInt();
+    //    Serial.println(SetHeure);       
         InString = chaineReception.substring(5,7);       
-        int SetMin = InString.toInt();
-        Serial.println(SetMin);
+        SetMin = InString.toInt();
+     //   Serial.println(SetMin);
         InString = chaineReception.substring(7,9);       
-        int SetJour = InString.toInt();
-        Serial.println(SetJour);
+        SetJour = InString.toInt();
+     //   Serial.println(SetJour);
         InString = chaineReception.substring(9,11);       
-        int SetMois = InString.toInt();
-        Serial.println(SetMois);
+        SetMois = InString.toInt();
+     //   Serial.println(SetMois);
         InString = chaineReception.substring(11);
-        int SetAnnee = InString.toInt();
-        Serial.println(SetAnnee);
-        //setTime(SetHeure, SetMin, 0, SetJour, SetMois, SetAnnee);
-        setTime(02, 02, 0, 21, 11, 1955);
-        RTC.set(now()); 
+        SetAnnee = InString.toInt();
+      //  Serial.println(SetAnnee);
+        ClockGestion();
         }
 
       //PWM4
@@ -6910,8 +6931,11 @@ void Ecriture() {
 
 //=================================================LECTURE
 void Lecture() {
-  if ((LU == 1) && (SYNCHRO == 1) && (GSMPasAPas == 2 or GSMPasAPas == 10)) {
-   // if ((LU == 1) && (SYNCHRO == 1)) {
+
+    if ((LU == 1) && (SYNCHRO == 1) && (((GSMPasAPas == 2 or GSMPasAPas == 10) && buttonPin40Num>=4) || buttonPin40Num<4))  {
+    
+    //if ((LU == 1) && (SYNCHRO == 1)) 
+    
     //Serial.println (LU);
     //Serial.println (SYNCHRO);
     //Serial.println (Cycle);
@@ -6942,9 +6966,9 @@ void Lecture() {
     Tram = Tram + "F";
 
     if (F8[125] == NAN) {
-      F8[125] = 0.0;
+      F8[125] = 0.0;  
     }
-    dtostrf( F8M125, 5, 2, charVal);
+    dtostrf( F8[125], 5, 2, charVal);
     Tram = Tram + "D04" +  charVal;
     Tram = Tram + "F";
 
